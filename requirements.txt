@@ -1,0 +1,7 @@
+lightning
+wandb
+git+https://github.com/qubvel/segmentation_models.pytorch
+opencv-python
+git+https://github.com/huggingface/transformers
+albumentations
+lightning_transformers
