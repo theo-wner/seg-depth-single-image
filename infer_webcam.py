@@ -31,11 +31,6 @@ if __name__ == '__main__':
     image = image.resize((640, 480))
     image = TF.to_tensor(image).unsqueeze(0).to('cpu')
 
-
-    # Load image
-    #image = np.array(Image.open('./data/image/test/00001.png'))
-    #image = TF.to_tensor(image).unsqueeze(0).to('cpu')
-
     # Infer
     with torch.no_grad():
         seg_logits, depth_preds = model(image)
