@@ -5,6 +5,7 @@ import torch
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 import matplotlib.cm
+from PIL import Image
 
 '''
 Maps 40 classes to 13 classes for Segmentation
@@ -45,14 +46,10 @@ def get_labels_and_colors():
 '''
 Creates a plot of the image, gt labels and gt depth maps
 '''
-def visualize_img_gts(image, gt_label, gt_depth, filename='test.png'):
-    # --------------------------------------------------------------------------------------------
-    # place subplots
-    # --------------------------------------------------------------------------------------------
-    plt.figure(figsize=(16, 4.5), frameon=False)
+def visualize_img_gts(image, seg_preds, depth_preds):
 
-    # Leave everything as it is!!!
-    # If then only adjust the wspace value!!!
+    # Place subplots
+    plt.figure(figsize=(16, 4.5), frameon=False)
     plt.subplots_adjust(left=0,
                         bottom=0,
                         right=0.79,
@@ -60,57 +57,53 @@ def visualize_img_gts(image, gt_label, gt_depth, filename='test.png'):
                         wspace=0.05,
                         hspace=0.0)
     
-    # --------------------------------------------------------------------------------------------
     # Image
-    # --------------------------------------------------------------------------------------------
-    # Convert Image from Tensor to Image
-    image = image.permute(1, 2, 0).numpy()
+    image = image.squeeze(0).permute(1, 2, 0).numpy()
+
     plt.subplot(1, 3, 1)
     plt.xticks([])
     plt.yticks([])
-    plt.imshow(image)
+    image_out = plt.imshow(image)
+    image_out = image_out.get_array()
+    image_out = Image.fromarray((image_out * 255).astype('uint8'))
     plt.axis('off')
 
-    # --------------------------------------------------------------------------------------------
     # Label Preprocessing
-    # --------------------------------------------------------------------------------------------
-    gt_label = map_40_to_13(gt_label)
-
-    # Definde Labels and Colors as Dictionary
+    seg_preds = map_40_to_13(seg_preds)
     labels_and_colors = get_labels_and_colors()
+    cmap_seg = mcolors.ListedColormap(list(labels_and_colors.values()))
 
-    # Create Colormap from Dictionary
-    cmap = mcolors.ListedColormap(list(labels_and_colors.values()))
-
-    # --------------------------------------------------------------------------------------------
-    # Gt Label
-    # --------------------------------------------------------------------------------------------
-    # Convert Mask from Tensor to Image
-    gt_label = gt_label.squeeze().numpy()
-    # Set Unlabeled Pixels to Value 14 (For the colormap)
-    gt_label[gt_label == 255] = 14
+    # Segmentation Prediction
+    seg_preds = seg_preds.squeeze().numpy()
+    seg_preds[seg_preds == 255] = 14
 
     plt.subplot(1, 3, 2)
     plt.xticks([])
     plt.yticks([])
-    #plt.imshow(image)
-    plt.imshow(gt_label, cmap=cmap, vmin=0, vmax=14)#, alpha=0.5)
+    seg_out = plt.imshow(seg_preds, cmap=cmap_seg, vmin=0, vmax=14)
+    seg_out = np.array(seg_out.get_array())
+    seg_out = cmap_seg(seg_out)
+    seg_out = seg_out[:, :, :3]
+    seg_out = Image.fromarray((seg_out * 255).astype('uint8'))
     plt.axis('off')
 
-    # --------------------------------------------------------------------------------------------
-    # Gt Depth
-    # --------------------------------------------------------------------------------------------
+    # Depth Prediction
+    depth_preds = depth_preds.squeeze()
+
     plt.subplot(1, 3, 3)
     plt.xticks([])
     plt.yticks([])
-    cmap = matplotlib.cm.get_cmap('plasma_r')
+    cmap_depth = matplotlib.cm.get_cmap('plasma_r')
     norm = plt.Normalize(vmin=0, vmax=10)
-    plt.imshow(gt_depth.squeeze().numpy(), cmap=cmap, norm=norm)
+    depth_out = plt.imshow(depth_preds, cmap=cmap_depth, norm=norm)
+    depth_out = depth_out.get_array()
+    # Normalize depth map
+    depth_out = (depth_out - np.min(depth_out)) / (np.max(depth_out) - np.min(depth_out))
+    depth_out = cmap_depth(depth_out)
+    depth_out = Image.fromarray((depth_out * 255).astype('uint8'))
     plt.axis('off')
 
-    # --------------------------------------------------------------------------------------------
     # Legend
-    # --------------------------------------------------------------------------------------------
     legend_elements = [mpatches.Patch(facecolor=labels_and_colors[label],
                              edgecolor='black',
                              label=label) for label in labels_and_colors]
@@ -118,28 +111,11 @@ def visualize_img_gts(image, gt_label, gt_depth, filename='test.png'):
                loc='center left',
                bbox_to_anchor=(1.35, 0.5))
     
-    # Set Legend Title
-    #plt.gca().get_legend().set_title('Annotationen')
-
-    # Set the legend font size
-    #plt.gca().get_legend().get_title().set_fontsize('medium')
-    
-    # Make legend bold
-    #plt.setp(plt.gca().get_legend().get_title(), fontweight='bold')
-
-    # Set the font size of the labels and font type
     for label in plt.gca().get_legend().get_texts():
         label.set_fontsize('xx-large')
-        #label.set_fontfamily('serif')
 
-    # Make the font of my legend look like latex
-    #plt.gca().get_legend().get_title().set_fontfamily('serif')
-
-    # --------------------------------------------------------------------------------------------
     # Colorbar
-    # --------------------------------------------------------------------------------------------
-    # Colorbar
-    cbar = plt.colorbar(plt.cm.ScalarMappable(cmap=cmap, norm=norm), 
+    cbar = plt.colorbar(plt.cm.ScalarMappable(cmap=cmap_depth, norm=norm), 
                     ax=plt.gcf().get_axes(), 
                     orientation='vertical', 
                     pad=0.02,
@@ -147,7 +123,7 @@ def visualize_img_gts(image, gt_label, gt_depth, filename='test.png'):
     cbar.set_label('Tiefe (m)', size='xx-large')
     cbar.ax.tick_params(labelsize='xx-large')
 
-    # --------------------------------------------------------------------------------------------
     # Show Plot
-    # --------------------------------------------------------------------------------------------
     plt.show()
+
+    return image_out, seg_out, depth_out

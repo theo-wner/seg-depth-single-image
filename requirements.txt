@@ -1,7 +1,9 @@
 lightning
 wandb
 git+https://github.com/qubvel/segmentation_models.pytorch
-opencv-python
+opencv-contrib-python
 git+https://github.com/huggingface/transformers
 albumentations
 lightning_transformers
+open3d
+matplotlib==3.5.2

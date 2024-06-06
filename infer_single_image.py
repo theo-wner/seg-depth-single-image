@@ -9,6 +9,7 @@ import torchvision.transforms.functional as TF
 import transformers
 from PIL import Image
 import cv2
+import open3d as o3d
 
 if __name__ == '__main__':
 
@@ -40,10 +41,40 @@ if __name__ == '__main__':
         
         depth_preds = F.relu(depth_preds, inplace=True)
         depth_preds = torch.nn.functional.interpolate(depth_preds, size=image.shape[-2:], mode="bilinear", align_corners=False)
-        depth_preds = depth_preds.squeeze(1)
-
-        image = image.squeeze(0)
+        depth_preds = depth_preds.squeeze(1).numpy()
 
         # Visualize
-        visualize_img_gts(image, seg_preds, depth_preds, filename='test.png')
+        image_out, seg_out, depth_out = visualize_img_gts(image, seg_preds, depth_preds)
+
+        # Experimental: Visualize point cloud
+        '''
+        # Convert to Open3D Image
+        seg_out = np.array(seg_out).astype(np.uint8)
+        depth_preds = np.moveaxis(depth_preds, 0, -1)
+
+        seg_out = o3d.geometry.Image(seg_out)
+        depth_preds = o3d.geometry.Image(depth_preds)
+
+        # Create dummy camera intrinsics of a 640x480 webcam image
+        pinhole_camera_intrinsic = o3d.camera.PinholeCameraIntrinsic(640, 480, 400,400, 320, 240)
+
+        # Calculate point cloud
+        rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(seg_out, depth_preds, convert_rgb_to_intensity=False)
+        pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, pinhole_camera_intrinsic)
+    
+        # flip the orientation, so it looks upright, not upside-down
+        pcd.transform([[1,0,0,0],[0,-1,0,0],[0,0,-1,0],[0,0,0,1]])
+
+        vis = o3d.visualization.Visualizer()
+        vis.create_window()
+
+        vis.add_geometry(pcd)
+
+        opt = vis.get_render_option()
+        opt.point_size = 1
+
+        vis.run()
+        vis.destroy_window()
+        '''
+
 
