@@ -21,7 +21,7 @@ def str2bool(v):
 parser = argparse.ArgumentParser(description='Parser')
 
 parser.add_argument('--task', type=str, default=None, help='seg, depth, or segdepth')
-parser.add_argument('--backbone', type=str, default='b3', help='Backbone of the model')
+parser.add_argument('--backbone', type=str, default='b5', help='Backbone of the model')
 parser.add_argument('--batch_size', type=int, default=8, help='Batch Size')
 parser.add_argument('--num_workers', type=int, default=4, help='Number of Workers')
 parser.add_argument('--num_epochs', type=int, default=400, help='Number of Epochs')
