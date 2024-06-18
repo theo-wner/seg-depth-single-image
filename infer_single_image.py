@@ -32,7 +32,7 @@ if __name__ == '__main__':
             pass
 
         # Load image from webcam
-        cap = cv2.VideoCapture(4) # 0 is Laptop webcam, 4 is external webcam
+        cap = cv2.VideoCapture(0) # 0 is Laptop webcam, 4 is external webcam
         ret, frame = cap.read()
         cap.release()
         image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
